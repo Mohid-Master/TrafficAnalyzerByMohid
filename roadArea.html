@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Identifier</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            margin-top: 20px;
+            max-width: 100%;
+        }
+        input[type="file"] {
+            margin-bottom: 20px;
+        }
+        #results {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+    <script src="https://docs.opencv.org/4.x/opencv.js" async onload="onOpenCvReady();"></script>
+</head>
+<body>
+    <h1>Road Identifier</h1>
+    <input type="file" id="upload" accept="image/*" disabled>
+    <canvas id="canvas"></canvas>
+    <div id="results"></div>
+
+    <script>
+        let cvReady = false;
+
+        function onOpenCvReady() {
+            cvReady = true;
+            document.getElementById('upload').disabled = false; // Enable the file input
+            console.log("OpenCV.js is ready.");
+        }
+
+        const input = document.getElementById('upload');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const resultsDiv = document.getElementById('results');
+        
+        // Define pixel-to-meter scale (example: 1 pixel = 0.01 meters)
+        const PIXEL_TO_METER_SCALE = 0.01; 
+
+        input.addEventListener('change', (event) => {
+            if (!cvReady) {
+                alert("OpenCV.js is not ready yet. Please wait.");
+                return;
+            }
+
+            const file = event.target.files[0];
+            const img = new Image();
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                processImage();
+            };
+            img.src = URL.createObjectURL(file);
+        });
+
+        function processImage() {
+            let src = cv.imread(canvas);
+            let gray = new cv.Mat();
+            let blurred = new cv.Mat();
+            let edges = new cv.Mat();
+            let contours = new cv.MatVector();
+            let hierarchy = new cv.Mat();
+
+            // Convert to grayscale
+            cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+
+            // Apply Gaussian Blur
+            cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
+
+            // Detect edges
+            cv.Canny(blurred, edges, 50, 150);
+
+            // Find contours
+            cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+            let totalRoadArea = 0;
+            resultsDiv.innerHTML = "<h3>Detected Roads:</h3>";
+
+            // Calculate areas and draw bounding boxes
+            for (let i = 0; i < contours.size(); i++) {
+                let contour = contours.get(i);
+                let area = cv.contourArea(contour);
+                
+                if (area > 500) { // Filter out small areas (noise)
+                    totalRoadArea += area;
+
+                    // Approximate contour to polygon and get bounding rectangle
+                    let rect = cv.boundingRect(contour);
+                    let [x, y, width, height] = [rect.x, rect.y, rect.width, rect.height];
+
+                    // Draw bounding box
+                    let color = new cv.Scalar(0, 255, 0); // Green color for bounding box
+                    cv.rectangle(src, new cv.Point(x, y), new cv.Point(x + width, y + height), color, 2);
+
+                    // Calculate real-world area
+                    let realArea = area * Math.pow(PIXEL_TO_METER_SCALE, 2);
+                    resultsDiv.innerHTML += `<p>Road ${i + 1}: ${realArea.toFixed(2)} m²</p>`;
+
+                    // Label the box with area
+                    ctx.font = "16px Arial";
+                    ctx.fillStyle = "red";
+                    ctx.fillText(`${realArea.toFixed(2)} m²`, x + 5, y + 20);
+                }
+            }
+
+            // Show processed image
+            cv.imshow('canvas', src);
+
+            resultsDiv.innerHTML += `<p><strong>Total Road Area:</strong> ${(totalRoadArea * Math.pow(PIXEL_TO_METER_SCALE, 2)).toFixed(2)} m²</p>`;
+
+            // Clean up
+            src.delete();
+            gray.delete();
+            blurred.delete();
+            edges.delete();
+            contours.delete();
+            hierarchy.delete();
+        }
+    </script>
+</body>
+</html>

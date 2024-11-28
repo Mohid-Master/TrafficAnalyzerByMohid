@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Traffic Analysis Tool</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+</head>
+<body>
+  <header>
+    <h1>Traffic Analysis Tool</h1>
+    <div id="notification">Please wait, models are loading...</div>
+  </header>
+  <main>
+    <section id="file-section">
+      <h2>Upload or Drag & Drop a File</h2>
+      <div id="file-drop-area">
+        <label for="fileInput">Choose File</label>
+        <input type="file" id="fileInput" accept="image/*,video/*">
+      </div>
+    </section>
+
+    <section id="results-section">
+      <h3>Traffic Analysis</h3>
+      <div id="results">Upload an image or video to begin.</div>
+      <!-- <div id="results">Upload an image or video to begin.</div> -->
+      <button id="downloadButton" style="display: none;">Download JSON</button>
+    </section>
+
+    <section id="canvas-section">
+      <video id="video" class="hidden" autoplay muted ></video>
+      <img id="image" class="hidden"></img>
+      <canvas id="trafficCanvas"></canvas>
+    </section>
+  </main>
+  <footer>
+    <p>Real-Time Traffic Analysis & Monitoring</p>
+  </footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+        <script src="https://docs.opencv.org/4.x/opencv.js" async onload="onOpenCvReady();"></script>
+  <script src="script.js"></script>
+</body>
+</html>
