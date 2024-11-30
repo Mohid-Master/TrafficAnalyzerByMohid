@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Traffic Analysis Tool</title>
+  link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
@@ -11,7 +12,9 @@
 <body>
   <header>
     <h1>Traffic Analysis Tool</h1>
-    <div id="notification">Please wait, models are loading...</div>
+    <div id="notification"><span>Please wait, models are loading...</span><div class="loader"></div>
+    
+    </div>
   </header>
   <main>
     <section id="file-section">
@@ -43,3 +46,4 @@
   <script src="script.js"></script>
 </body>
 </html>
+
