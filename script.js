@@ -20,7 +20,7 @@ let detectionColors = {};
             console.log("OpenCV.js is ready.");
         }
 async function loadModel() {
-  notification.style.display = "block";
+  notification.style.display = "flex";
   const startTime = performance.now();
   model = await cocoSsd.load();
   const endTime = performance.now();
@@ -95,11 +95,28 @@ async function processImage(fileURL) {
     const predictions = await model.detect(canvas);
       resultData = predictions
     drawDetections(predictions);
-    displayResults(predictions);
+    displayImageResults(predictions);
     logResultsToConsole(predictions, "image");
   };
 }
+function displayImageResults(predictions) {
+  const resultContainer = document.getElementById("results");
+  resultContainer.innerHTML = ""; // Clear previous results
 
+  const summary = predictions.reduce((acc, { class: objClass }) => {
+    acc[objClass] = (acc[objClass] || 0) + 1;
+    return acc;
+  }, {});
+
+  const resultHTML = Object.entries(summary)
+    .map(([key, value]) => `<p>${key}: ${value}</p>`)
+    .join("");
+
+  resultContainer.innerHTML = `
+    <h3>Detected Objects:</h3>
+    ${resultHTML}
+  `;
+}
 // function processVideo(fileURL) {
 //   const video = document.createElement("video");
 //   video.src = fileURL;
@@ -178,38 +195,44 @@ const processVideo = (fileURL) => {
     video.addEventListener('play', processVideoFrame);
   });
 };
-const processVideoFrame = () => {
+function processVideoFrame() {
   if (video.paused || video.ended) {
-    // Handle the end of video processing
-    const resultVideo = resultsData.map(element => {
-      const time = element.time;
-      const classes = element.objects.map(e => e.class);
-      return { t: time, classes: classes.join(", ") };
-    });
-    displayResults(resultVideo);
-    logResultsToConsole(resultsData, "video");
+    // Display final results
+    displayVideoResults(resultsData);
     return;
   }
 
-  // Ensure canvas dimensions are set
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
-  
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-  if (!model) {
-    console.error("AI model not loaded.");
-    return;
-  }
 
   model.detect(canvas).then(predictions => {
     drawDetections(predictions);
     collectVideoResults(predictions, video.currentTime);
+
+    // Dynamically update results every second
+    if (Math.floor(video.currentTime) % 1 === 0) {
+      displayVideoResults(resultsData);
+    }
+
     requestAnimationFrame(processVideoFrame);
   }).catch(error => {
     console.error("Error processing video frame:", error);
   });
-};
+}
+
+function displayVideoResults(results) {
+  const resultContainer = document.getElementById("results");
+  resultContainer.innerHTML = `<h3>Video Analysis</h3>`;
+
+  results.forEach(({ time, objects }) => {
+    const timeStamp = `<h4>Time: ${time}s</h4>`;
+    const objectList = objects
+      .map(({ class: objClass }) => `<li>${objClass}</li>`)
+      .join("");
+    resultContainer.innerHTML += `${timeStamp}<ul>${objectList}</ul>`;
+  });
+}
 
 function drawDetections(predictions) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -295,4 +318,5 @@ downloadButton.addEventListener('click', () => {
   downloadJson(); // Download JSON
   downloadExcel(); // Download Excel
 });
+
 
